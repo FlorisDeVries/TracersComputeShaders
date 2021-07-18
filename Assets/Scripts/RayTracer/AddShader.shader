@@ -41,6 +41,7 @@
             sampler2D _MainTex;
             float _Sample;
 
+            // Interesting way of anti-aliasing: Each ray trace render has a small pixel offset, we average all results
             float4 frag (v2f i) : SV_Target
             {
                 return float4(tex2D(_MainTex, i.uv).rgb, 1.0f / (_Sample + 1.0f));

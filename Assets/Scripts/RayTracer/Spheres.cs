@@ -1,43 +1,62 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
-public struct Sphere
+namespace Assets.Scripts.RayTracer
 {
-    public Vector3 pos;
-    public float radius;
-    public Vector3 col;
-
-    public Sphere(Vector3 pos, float radius, Vector3 col){
-        this.pos = pos;
-        this.radius = radius;
-        this.col = col;
-    }
-}
-public static class Spheres
-{
-    public static Sphere[] GenerateRandomSphere(int count)
+    public struct Sphere
     {
-        Sphere[] spheres = new Sphere[count];
-        for (int i = 0; i < count; i++)
+        public Vector3 pos;
+        public float radius;
+        public Vector3 col;
+
+        public Sphere(Vector3 pos, float radius, Vector3 col){
+            this.pos = pos;
+            this.radius = radius;
+            this.col = col;
+        }
+    }
+    public static class Spheres
+    {
+        public static Sphere[] GenerateRandomSphere(int count, float posRange, Vector2 sizeRange)
         {
-            spheres[i] = RandomSphere();
+            var spheres = new Sphere[count];
+            for (var i = 0; i < count; i++)
+            {
+                spheres[i] = RandomSphere(posRange, sizeRange);
+            }
+
+            return spheres;
         }
 
-        return spheres;
-    }
+        public static Sphere[] GenerateSphereArray(int dimensionX)
+        {
+            var spheres = new Sphere[dimensionX * dimensionX];
+            for (var x = 0; x < dimensionX; x++)
+            {
+                for (var y = 0; y < dimensionX; y++)
+                {
+                    spheres[x * dimensionX + y] = new Sphere(new Vector3(x * 3, 1, y * 3), 1, RandomVec3(0, 1));
+                }
+            }
 
-    private static Sphere RandomSphere()
-    {
-        Sphere sphere = new Sphere();
-        sphere.pos = RandomVec3();
-        sphere.radius = Random.Range(.1f, 2f);
-        sphere.col = RandomVec3();
-        return sphere;
-    }
+            return spheres;
+        }
 
-    private static Vector3 RandomVec3(float min = -10, float max = 10)
-    {
-        return new Vector3(Random.Range(min, max), Random.Range(min, max), Random.Range(min, max));
+        private static Sphere RandomSphere(float posRange, Vector2 sizeRange)
+        {
+            Sphere sphere = new Sphere();
+            sphere.pos = RandomVec3(-posRange, posRange);
+            sphere.radius = Random.Range(sizeRange.x, sizeRange.y);
+            sphere.col = RandomVec3(0, 1);
+            return sphere;
+        }
+
+        private static Vector3 RandomVec3(float min, float max)
+        {
+            return new Vector3(Random.Range(min, max), Random.Range(min, max) / 10, Random.Range(min, max));
+        }
     }
 }
