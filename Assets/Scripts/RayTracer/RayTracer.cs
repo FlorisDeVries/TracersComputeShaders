@@ -1,9 +1,11 @@
-﻿using UnityEditor;
+﻿using System;
+using UnityEditor;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace Assets.Scripts.RayTracer
 {
-    // [ExecuteInEditMode]
+    [ExecuteInEditMode]
     public class RayTracer : MonoBehaviour
     {
         [SerializeField] private ComputeShader _rayTracingShader = default;
@@ -71,7 +73,6 @@ namespace Assets.Scripts.RayTracer
         {
             SetShaderParameters();
             Render(destination);
-            ReleaseBuffers();
         }
 
         private void Render(RenderTexture destination)
@@ -115,6 +116,12 @@ namespace Assets.Scripts.RayTracer
                 _target.Create();
             }
         }
+
+        private void OnDisable()
+        {
+            ReleaseBuffers();
+        }
+
 
         private void ReleaseBuffers()
         {

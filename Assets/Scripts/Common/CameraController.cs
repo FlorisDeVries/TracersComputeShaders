@@ -1,6 +1,7 @@
 ﻿using System;
 using Assets.Scripts.Common.Input;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 namespace Assets.Scripts.Common
 {
@@ -16,8 +17,6 @@ namespace Assets.Scripts.Common
         [Range(1, 20)]
         [SerializeField] private float _lookSensitivity = 5f;
 
-        private Rigidbody _rigidbody = default;
-
         private Vector3 _moveDirection = Vector3.zero;
         private Vector2 _mouseDelta = Vector2.zero;
 
@@ -29,8 +28,6 @@ namespace Assets.Scripts.Common
             _inputHandler.VerticalMoveEvent += OnMoveVertical;
             _inputHandler.MouseMoveEvent += OnMoveMouse;
             _inputHandler.SprintEvent += OnSprint;
-
-            _rigidbody = GetComponent<Rigidbody>();
 
             Cursor.visible = false;
         }
@@ -58,7 +55,7 @@ namespace Assets.Scripts.Common
         
         private void OnMoveMouse(Vector2 direction)
         {
-            _mouseDelta = direction;
+            _mouseDelta = Vector2.ClampMagnitude(direction, 2);
         }
         
         private void OnSprint(bool pressed)
@@ -66,7 +63,7 @@ namespace Assets.Scripts.Common
             _sprinting = pressed;
         }
 
-        private void FixedUpdate()
+        private void Update()
         {
             Look();
             Move();
@@ -74,24 +71,26 @@ namespace Assets.Scripts.Common
 
         private void Move()
         {
-            var velocity = _moveDirection * (_speed * 10 * Time.fixedDeltaTime);
+            var velocity = _moveDirection * (_speed * 10 * Time.deltaTime);
             if (_sprinting) velocity *= _sprintMultiplier;
 
             var euler = transform.rotation.eulerAngles;
             velocity = Quaternion.Euler(euler) * velocity;
 
-            var targetPosition = _rigidbody.position + velocity;
+            var targetPosition = transform.position + velocity;
 
-            _rigidbody.MovePosition(targetPosition);
+            transform.position = targetPosition;
         }
 
         private void Look()
         {
             var euler = transform.rotation.eulerAngles;
-            euler.y += _mouseDelta.x * (_lookSensitivity * 10 * Time.fixedDeltaTime);
-            euler.x -= _mouseDelta.y * (_lookSensitivity * 10 * Time.fixedDeltaTime);
-            
-            _rigidbody.MoveRotation(Quaternion.Euler(euler.x, euler.y, 0.0f));
+            euler.y += _mouseDelta.x;
+            euler.x -= _mouseDelta.y;
+
+            var targetRotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(euler.x, euler.y, 0.0f), _lookSensitivity * Time.deltaTime * 10);
+
+            transform.rotation = targetRotation;
         }
     }
 }
