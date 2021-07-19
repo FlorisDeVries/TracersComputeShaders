@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace Assets.Scripts.RayTracer
 {
-    [ExecuteInEditMode]
+    // [ExecuteInEditMode]
     public class RayTracer : MonoBehaviour
     {
-        [SerializeField] private ComputeShader _rayTracingShader;
-        [SerializeField] private Texture _skyboxTexture;
+        [SerializeField] private ComputeShader _rayTracingShader = default;
+        [SerializeField] private Texture _skyboxTexture = default;
 
         private RenderTexture _target;
         private Camera _camera;
@@ -28,7 +28,7 @@ namespace Assets.Scripts.RayTracer
         [SerializeField] private Vector2 _sphereSize = new Vector2(.1f, 2f);
 
         [Header("Lights")] 
-        [SerializeField] private Light _directionalLight;
+        [SerializeField] private Light _directionalLight = default;
 
         private void Awake()
         {
@@ -49,36 +49,22 @@ namespace Assets.Scripts.RayTracer
         private void CreateScene()
         {
             // Primitives
-            //RandomSpheres();
-            SphereArray();
+
+            // Create some random spheres
+            if (_spheres == null || _spheres.Length != _sphereCount)
+            {
+                //_spheres = Spheres.GenerateRandomSphere(_sphereCount, _sphereRange, _sphereSize);
+                //_spheres = Spheres.GenerateSphereArray(_sphereCount);
+                _spheres = Spheres.GenerateSphereCircle(_sphereCount, _sphereRange, _sphereSize);
+            }
+
+            _sphereBuffer = new ComputeBuffer(_spheres.Length, sizeof(float) * 8);
+            _sphereBuffer.SetData(_spheres);
+            _rayTracingShader.SetBuffer(0, "_Spheres", _sphereBuffer);
 
             // Lights
             Vector3 l = _directionalLight.transform.forward;
             _rayTracingShader.SetVector("_DirectionalLight", new Vector4(l.x, l.y, l.z, _directionalLight.intensity));
-        }
-
-        private void RandomSpheres()
-        {
-            // Create some random spheres
-            if (_spheres == null || _spheres.Length != _sphereCount)
-                _spheres = Spheres.GenerateRandomSphere(_sphereCount, _sphereRange, _sphereSize);
-
-            _sphereBuffer = new ComputeBuffer(_spheres.Length, sizeof(float) * 7);
-            _sphereBuffer.SetData(_spheres);
-            _rayTracingShader.SetBuffer(0, "_Spheres", _sphereBuffer);
-            _rayTracingShader.SetFloat("_SphereCount", _sphereCount);
-        }
-
-        private void SphereArray()
-        {
-            // Create some random spheres
-            if (_spheres == null || _spheres.Length != _sphereCount * _sphereCount)
-                _spheres = Spheres.GenerateSphereArray(_sphereCount);
-
-            _sphereBuffer = new ComputeBuffer(_spheres.Length, sizeof(float) * 7);
-            _sphereBuffer.SetData(_spheres);
-            _rayTracingShader.SetBuffer(0, "_Spheres", _sphereBuffer);
-            _rayTracingShader.SetFloat("_SphereCount", _sphereCount * _sphereCount);
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
