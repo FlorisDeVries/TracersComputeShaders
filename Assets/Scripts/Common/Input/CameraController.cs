@@ -1,9 +1,6 @@
-﻿using System;
-using Assets.Scripts.Common.Input;
-using UnityEngine;
-using UnityEngine.PlayerLoop;
+﻿using UnityEngine;
 
-namespace Assets.Scripts.Common
+namespace Assets.Scripts.Common.Input
 {
     public class CameraController : MonoBehaviour
     {

@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-namespace Assets.Scripts.RayTracer
+namespace Assets.Scripts.Common.Primitives
 {
     public struct Sphere
     {
@@ -62,16 +60,12 @@ namespace Assets.Scripts.RayTracer
 
             for (var i = 0; i < count; i++)
             {
-                var randomSphere = RandomSphere(radius, sizeRange);
-                var randomPos = Random.insideUnitCircle * radius;
-                randomSphere.Pos = new Vector3(randomPos.x, 1, randomPos.y);
+                var randomSphere = RandomInCircle(radius, sizeRange);
 
                 var retries = 100;
                 while (randomSphere.IntersectsOtherSphere(spheres))
                 {
-                    randomSphere = RandomSphere(radius, sizeRange);
-                    randomPos = Random.insideUnitCircle * radius;
-                    randomSphere.Pos = new Vector3(randomPos.x, 1, randomPos.y);
+                    randomSphere = RandomInCircle(radius, sizeRange);
 
                     retries--;
                     if (retries >= 1) continue;
@@ -89,6 +83,19 @@ namespace Assets.Scripts.RayTracer
         private static bool IntersectsOtherSphere(this Sphere sphere, Sphere[] otherSpheres)
         {
             return otherSpheres.Any(otherSphere => Vector3.Distance(otherSphere.Pos, sphere.Pos) < otherSphere.Radius + sphere.Radius);
+        }
+
+        private static Sphere RandomInCircle(float radius, Vector2 sizeRange)
+        {
+            var randomSphere = RandomSphere(radius, sizeRange);
+            var randomPos = Random.insideUnitCircle * radius;
+            randomSphere.Pos = new Vector3(randomPos.x, 1, randomPos.y);
+
+            // TEMP to disable metal
+            randomSphere.Specular = 0;
+
+            return randomSphere;
+
         }
 
         private static Sphere RandomSphere(float posRange, Vector2 sizeRange)

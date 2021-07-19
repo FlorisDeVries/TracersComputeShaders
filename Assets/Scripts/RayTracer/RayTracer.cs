@@ -1,11 +1,11 @@
 ﻿using System;
+using Assets.Scripts.Common.Primitives;
 using UnityEditor;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace Assets.Scripts.RayTracer
 {
-    [ExecuteInEditMode]
     public class RayTracer : MonoBehaviour
     {
         [SerializeField] private ComputeShader _rayTracingShader = default;
