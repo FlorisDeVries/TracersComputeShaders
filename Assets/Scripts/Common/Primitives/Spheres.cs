@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Unity.MPE;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -11,13 +12,18 @@ namespace Assets.Scripts.Common.Primitives
         public float Radius;
         public Vector3 Albedo;
         public float Specular;
+        public float Smoothness;
+        public Vector3 Emission;
 
-        public Sphere(Vector3 pos, float radius, Vector3 col, float specular)
+
+        public Sphere(Vector3 pos, float radius, Vector3 col, float specular, float smoothness, Vector3 emission)
         {
             Pos = pos;
             Radius = radius;
             Albedo = col;
             Specular = specular;
+            Smoothness = smoothness;
+            Emission = emission;
         }
     }
     public static class Spheres
@@ -45,7 +51,7 @@ namespace Assets.Scripts.Common.Primitives
                     if (x * dimension + y >= count)
                         return spheres;
 
-                    var randomSphere = RandomSphere(1, new Vector2(1,1));
+                    var randomSphere = RandomSphere(1, new Vector2(1, 1));
                     randomSphere.Pos = new Vector3(x * 3, 1, y * 3);
                     spheres[x * dimension + y] = randomSphere;
                 }
@@ -91,18 +97,17 @@ namespace Assets.Scripts.Common.Primitives
             var randomPos = Random.insideUnitCircle * radius;
             randomSphere.Pos = new Vector3(randomPos.x, 1, randomPos.y);
 
-            // TEMP to disable metal
-            randomSphere.Specular = 0;
-
             return randomSphere;
 
         }
 
         private static Sphere RandomSphere(float posRange, Vector2 sizeRange)
         {
-            var sphere = new Sphere();
-            sphere.Pos = RandomVec3(-posRange, posRange);
-            sphere.Radius = Random.Range(sizeRange.x, sizeRange.y);
+            var sphere = new Sphere
+            {
+                Pos = RandomVec3(-posRange, posRange), 
+                Radius = Random.Range(sizeRange.x, sizeRange.y)
+            };
 
             var col = Random.ColorHSV(0f, 1f, 1f, 1f, 1f, 1f);
             sphere.Albedo = new Vector3(col.r, col.g, col.b);
@@ -111,6 +116,13 @@ namespace Assets.Scripts.Common.Primitives
             if (sphere.Specular < .1f)
             {
                 sphere.Specular = 0;
+            }
+
+            sphere.Smoothness = Random.Range(0, 1f);
+
+            if (Random.Range(0,1f) > .8f)
+            {
+                sphere.Emission = RandomVec3(1f, 10f);
             }
 
             return sphere;

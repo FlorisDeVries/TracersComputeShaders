@@ -23,7 +23,7 @@ namespace Assets.Scripts.PathTracer
         private Sphere[] _spheres;
 
         [Header("Primitives")]
-        [Range(1, 50)]
+        [Range(1, 150)]
         [SerializeField] private int _sphereCount = 25;
         [Range(10, 100)]
         [SerializeField] private float _sphereRange = 10;
@@ -88,7 +88,7 @@ namespace Assets.Scripts.PathTracer
                 _sphereBuffer.Release();
             if (_spheres.Length > 0)
             {
-                _sphereBuffer = new ComputeBuffer(_spheres.Length, sizeof(float) * 8);
+                _sphereBuffer = new ComputeBuffer(_spheres.Length, sizeof(float) * 12);
                 _sphereBuffer.SetData(_spheres);
             }
 

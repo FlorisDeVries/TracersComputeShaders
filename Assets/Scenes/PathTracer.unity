@@ -152,7 +152,7 @@ Light:
   m_Type: 1
   m_Shape: 0
   m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
-  m_Intensity: 1
+  m_Intensity: 0
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -314,11 +314,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _pathTracingShader: {fileID: 7200000, guid: 1d462a82a906af542861c932188a0f6a, type: 3}
   _skyboxTexture: {fileID: 2800000, guid: ac3bf2034bf1bcd4a8f1cf07a4735b5f, type: 3}
-  _seed: 1223832719
+  _seed: 195759
   _currentSample: 11
-  _sphereCount: 50
+  _sphereCount: 150
   _sphereRange: 100
-  _sphereSize: {x: 5, y: 30}
+  _sphereSize: {x: 1, y: 20}
   _directionalLight: {fileID: 705507994}
 --- !u!114 &963194230
 MonoBehaviour:
