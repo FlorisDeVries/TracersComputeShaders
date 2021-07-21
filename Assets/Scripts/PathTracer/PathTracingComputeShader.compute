@@ -46,6 +46,7 @@ float4 _DirectionalLight;
 SamplerState sampler_SkyboxTexture;
 static const float PI = 3.14159265f;
 static const float EPSILON = 1e-8;
+static const float MaxDistance = 9999999999999999999999999.0f;
 
 struct Ray
 {
@@ -94,7 +95,7 @@ RayHit CreateRayHit()
     RayHit hit;
     
     hit.position = float3(0.0f, 0.0f, 0.0f);
-    hit.distance = 1.#INF;
+    hit.distance = MaxDistance;
     hit.normal = float3(0.0f, 0.0f, 0.0f);
     hit.albedo = float3(0.0f, 1.0f, 0.0f);
     hit.specular = 0.0f;
@@ -171,17 +172,17 @@ float3x3 GetTangentSpace(float3 normal)
 
     // Generate vectors
     float3 tangent = normalize(cross(normal, helper));
-    float3 binormal = normalize(cross(normal, tangent));
-    return float3x3(tangent, binormal, normal);
+    float3 biNormal = normalize(cross(normal, tangent));
+    return float3x3(tangent, biNormal, normal);
 }
 
 float3 SampleHemisphere(float3 normal, float alpha)
 {
     // Sample the hemisphere, where alpha determines the kind of the sampling
-    float cosTheta = pow(rand(), 1.0f / (alpha + 1.0f));
-    float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+    float cos_theta = pow(rand(), 1.0f / (alpha + 1.0f));
+    float sin_theta = sqrt(1.0f - cos_theta * cos_theta);
     float phi = 2 * PI * rand();
-    float3 tangentSpaceDir = float3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
+    float3 tangentSpaceDir = float3(cos(phi) * sin_theta, sin(phi) * sin_theta, cos_theta);
     // Transform direction to world space
     return mul(tangentSpaceDir, GetTangentSpace(normal));
 }
@@ -193,7 +194,7 @@ float SmoothnessToPhongAlpha(float s)
 
 float3 Shade(inout Ray ray, RayHit hit)
 {
-    if (hit.distance < 1.#INF)
+    if (hit.distance < MaxDistance)
     {
         // Calculate chances of diffuse and specular reflection
         hit.albedo = min(1.0f - hit.specular, hit.albedo);
