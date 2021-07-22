@@ -60,7 +60,7 @@ namespace Assets.Scripts.RayTracer
                 _spheres = Spheres.GenerateSphereCircle(_sphereCount, _sphereRange, _sphereSize);
             }
 
-            _sphereBuffer = new ComputeBuffer(_spheres.Length, sizeof(float) * 8);
+            _sphereBuffer = new ComputeBuffer(_spheres.Length, sizeof(float) * 13);
             _sphereBuffer.SetData(_spheres);
             _rayTracingShader.SetBuffer(0, "_Spheres", _sphereBuffer);
 

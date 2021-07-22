@@ -14,6 +14,8 @@ struct Sphere
     float radius;
     float3 albedo;
     float specular;
+    float smoothness;
+    float3 emission;
 };
 
 // Primitives
@@ -69,7 +71,7 @@ RayHit CreateRayHit()
 {
     RayHit hit;
     hit.position = float3(0.0f, 0.0f, 0.0f);
-    hit.distance = 1.#INF;
+    hit.distance = 9999999999999999999.0f;
     hit.normal = float3(0.0f, 0.0f, 0.0f);
     hit.albedo = float3(0.0f, 1.0f, 0.0f);
     hit.specular = 0.0f;
@@ -132,8 +134,11 @@ RayHit Trace(Ray ray)
 
 float3 Shade(inout Ray ray, RayHit hit)
 {
-    if (hit.distance < 1.#INF)
+    
+    if (hit.distance < 9999999999999999999.0f)
     {
+        // Hit scene
+
         // Reflect the ray and multiply energy with specular reflection
         ray.origin = hit.position + hit.normal * 0.001f;
         ray.direction = reflect(ray.direction, hit.normal);
@@ -143,7 +148,7 @@ float3 Shade(inout Ray ray, RayHit hit)
         bool shadow = false;
         Ray shadowRay = CreateRay(hit.position + hit.normal * 0.001f, -1 * _DirectionalLight.xyz);
         RayHit shadowHit = Trace(shadowRay);
-        if (shadowHit.distance != 1.#INF)
+        if (shadowHit.distance != 9999999999999999999.0f)
         {
             return float3(0.0f, 0.0f, 0.0f);
         }
@@ -153,6 +158,8 @@ float3 Shade(inout Ray ray, RayHit hit)
     }
     else
     {
+        // Hit sky
+        
         // Erase the ray's energy - the sky doesn't reflect anything
         ray.energy = 0.0f;
         

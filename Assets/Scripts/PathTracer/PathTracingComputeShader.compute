@@ -35,7 +35,23 @@ struct Sphere
     float specular;
     float smoothness;
     float3 emission;
+    float refractionIndex;
 };
+
+Sphere TestSphere()
+{
+    Sphere sphere;
+
+    sphere.position = float3(0.0f,25.0f,0.0f);
+    sphere.radius = 10.0f;
+    sphere.albedo = float3(1.0f,1.0f,1.0f);
+    sphere.specular = 0.0f;
+    sphere.smoothness = 0.0f;
+    sphere.emission = float3(0.0f,0.0f,0.0f);
+    sphere.refractionIndex = 1.0f;
+
+    return sphere;
+}
 
 // Primitives
 StructuredBuffer<Sphere> _Spheres;
@@ -88,6 +104,8 @@ struct RayHit
     float specular;
     float smoothness;
     float3 emission;
+    bool inside;
+    float refractionIndex;
 };
 
 RayHit CreateRayHit()
@@ -101,6 +119,9 @@ RayHit CreateRayHit()
     hit.specular = 0.0f;
     hit.smoothness = 0.0f;
     hit.emission = float3(0.0f, 0.0f, 0.0f);
+
+    hit.inside = false;
+    hit.refractionIndex = 0.0f;
     
     return hit;
 }
@@ -135,7 +156,13 @@ void IntersectSphere(Ray ray, inout RayHit bestHit, Sphere sphere)
     if (p2sqr < 0)
         return;
     float p2 = sqrt(p2sqr);
-    float t = p1 - p2 > 0 ? p1 - p2 : p1 + p2;
+    float t = p1 - p2;
+
+    bool inside = t < 0;
+
+    if (inside)
+        t = p1 + p2;
+
     if (t > 0 && t < bestHit.distance)
     {
         bestHit.distance = t;
@@ -145,6 +172,10 @@ void IntersectSphere(Ray ray, inout RayHit bestHit, Sphere sphere)
         bestHit.specular = sphere.specular;
         bestHit.smoothness = sphere.smoothness;
         bestHit.emission = sphere.emission;
+        
+        bestHit.inside = inside;
+        bestHit.refractionIndex = sphere.refractionIndex;
+
     }
 }
 
@@ -153,6 +184,9 @@ RayHit Trace(Ray ray)
     RayHit bestHit = CreateRayHit();
     
     IntersectPlane(ray, bestHit, float3(0, -1, 0), float3(0, -4, 0));
+
+    Sphere sphere = TestSphere();
+    IntersectSphere(ray, bestHit, sphere);
 	
     // Trace spheres
     uint numSpheres, stride;
@@ -196,21 +230,38 @@ float3 Shade(inout Ray ray, RayHit hit)
 {
     if (hit.distance < MaxDistance)
     {
+        float multiplier = 0.001f;
+
+        // Determine if we want to refract
+        if (hit.inside)
+        {
+            multiplier *= -1.0f;
+        }
+
+        // Hit Scene, reset ray position: Now we need to figure out direction and energy
+        ray.origin = hit.position + hit.normal * multiplier;
+
+        float refractChance = rand();
+        if (hit.refractionIndex > 0.0f && refractChance > 0.5f)
+        {
+            return 0.0f;
+        }
+
+
+
         // Calculate chances of diffuse and specular reflection
-        hit.albedo = min(1.0f - hit.specular, hit.albedo);
         float specChance = energy(hit.specular);
-        float diffChance = energy(hit.albedo);
+        float diffChance = energy(hit.albedo);        
         float sum = specChance + diffChance;
         specChance /= sum;
         diffChance /= sum;
         
-        // Roulette-select the ray's path
+        // Roulette-select the ray's path: This so the specular surface is not 100% reflective
         float roulette = rand();
-        if (roulette < specChance)
+        if (roulette < specChance || hit.refractionIndex > 0.0f)
         {
             // Specular reflection
             float alpha = SmoothnessToPhongAlpha(hit.smoothness);
-            ray.origin = hit.position + hit.normal * 0.001f;
             ray.direction = SampleHemisphere(reflect(ray.direction, hit.normal), alpha);
             float f = (alpha + 2) / (alpha + 1);
             ray.energy *= (1.0f / specChance) * hit.specular * sdot(hit.normal, ray.direction, f);
@@ -218,7 +269,6 @@ float3 Shade(inout Ray ray, RayHit hit)
         else
         { 
             // Diffuse reflection
-            ray.origin = hit.position + hit.normal * 0.001f;
             ray.direction = SampleHemisphere(hit.normal, 1.0f);
             ray.energy *= (1.0f / diffChance) * hit.albedo;
         }
@@ -227,6 +277,8 @@ float3 Shade(inout Ray ray, RayHit hit)
     }
     else
     {
+        // Hit sky
+
         // Erase the ray's energy - the sky doesn't reflect anything
         ray.energy = 0.0f;
         

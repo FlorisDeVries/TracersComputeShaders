@@ -13,9 +13,9 @@ namespace Assets.Scripts.Common.Primitives
         public float Specular;
         public float Smoothness;
         public Vector3 Emission;
+        public float RefractionIndex;
 
-
-        public Sphere(Vector3 pos, float radius, Vector3 col, float specular, float smoothness, Vector3 emission)
+        public Sphere(Vector3 pos, float radius, Vector3 col, float specular, float smoothness, Vector3 emission, float refractionIndex)
         {
             Pos = pos;
             Radius = radius;
@@ -23,8 +23,53 @@ namespace Assets.Scripts.Common.Primitives
             Specular = specular;
             Smoothness = smoothness;
             Emission = emission;
+            RefractionIndex = refractionIndex;
+        }
+
+        public static Sphere RandomSphere(float posRange, Vector2 sizeRange)
+        {
+            var sphere = new Sphere
+            {
+                Pos = RandomVec3(-posRange, posRange),
+                Radius = Random.Range(sizeRange.x, sizeRange.y)
+            };
+
+            var col = Random.ColorHSV(0f, 1f, 1f, 1f, 1f, 1f);
+            sphere.Albedo = new Vector3(col.r, col.g, col.b);
+
+            sphere.Specular = Random.Range(0, .8f);
+            if (sphere.Specular < .1f)
+            {
+                sphere.Specular = 0;
+            }
+
+            sphere.Smoothness = Random.Range(0, 1f);
+
+            if (Random.Range(0, 1f) > .8f)
+            {
+                sphere.Emission = RandomVec3(1f, 10f);
+            }
+
+            sphere.RefractionIndex = 0f;
+
+            return sphere;
+        }
+
+        public static Sphere RandomInCircle(float radius, Vector2 sizeRange)
+        {
+            var randomSphere = RandomSphere(radius, sizeRange);
+            var randomPos = Random.insideUnitCircle * radius;
+            randomSphere.Pos = new Vector3(randomPos.x, 1, randomPos.y);
+
+            return randomSphere;
+        }
+
+        private static Vector3 RandomVec3(float min, float max)
+        {
+            return new Vector3(Random.Range(min, max), Random.Range(min, max) / 10, Random.Range(min, max));
         }
     }
+
     public static class Spheres
     {
         public static Sphere[] GenerateRandomSphere(int count, float posRange, Vector2 sizeRange)
@@ -32,7 +77,7 @@ namespace Assets.Scripts.Common.Primitives
             var spheres = new Sphere[count];
             for (var i = 0; i < count; i++)
             {
-                spheres[i] = RandomSphere(posRange, sizeRange);
+                spheres[i] = Sphere.RandomSphere(posRange, sizeRange);
             }
 
             return spheres;
@@ -50,7 +95,7 @@ namespace Assets.Scripts.Common.Primitives
                     if (x * dimension + y >= count)
                         return spheres;
 
-                    var randomSphere = RandomSphere(1, new Vector2(1, 1));
+                    var randomSphere = Sphere.RandomSphere(1, new Vector2(1, 1));
                     randomSphere.Pos = new Vector3(x * 3, 1, y * 3);
                     spheres[x * dimension + y] = randomSphere;
                 }
@@ -65,12 +110,12 @@ namespace Assets.Scripts.Common.Primitives
 
             for (var i = 0; i < count; i++)
             {
-                var randomSphere = RandomInCircle(radius, sizeRange);
+                var randomSphere = Sphere.RandomInCircle(radius, sizeRange);
 
                 var retries = 100;
                 while (randomSphere.IntersectsOtherSphere(spheres))
                 {
-                    randomSphere = RandomInCircle(radius, sizeRange);
+                    randomSphere = Sphere.RandomInCircle(radius, sizeRange);
 
                     retries--;
                     if (retries >= 1) continue;
@@ -88,48 +133,6 @@ namespace Assets.Scripts.Common.Primitives
         private static bool IntersectsOtherSphere(this Sphere sphere, Sphere[] otherSpheres)
         {
             return otherSpheres.Any(otherSphere => Vector3.Distance(otherSphere.Pos, sphere.Pos) < otherSphere.Radius + sphere.Radius);
-        }
-
-        private static Sphere RandomInCircle(float radius, Vector2 sizeRange)
-        {
-            var randomSphere = RandomSphere(radius, sizeRange);
-            var randomPos = Random.insideUnitCircle * radius;
-            randomSphere.Pos = new Vector3(randomPos.x, 1, randomPos.y);
-
-            return randomSphere;
-
-        }
-
-        private static Sphere RandomSphere(float posRange, Vector2 sizeRange)
-        {
-            var sphere = new Sphere
-            {
-                Pos = RandomVec3(-posRange, posRange), 
-                Radius = Random.Range(sizeRange.x, sizeRange.y)
-            };
-
-            var col = Random.ColorHSV(0f, 1f, 1f, 1f, 1f, 1f);
-            sphere.Albedo = new Vector3(col.r, col.g, col.b);
-
-            sphere.Specular = Random.Range(0, .8f);
-            if (sphere.Specular < .1f)
-            {
-                sphere.Specular = 0;
-            }
-
-            sphere.Smoothness = Random.Range(0, 1f);
-
-            if (Random.Range(0,1f) > .8f)
-            {
-                sphere.Emission = RandomVec3(1f, 10f);
-            }
-
-            return sphere;
-        }
-
-        private static Vector3 RandomVec3(float min, float max)
-        {
-            return new Vector3(Random.Range(min, max), Random.Range(min, max) / 10, Random.Range(min, max));
         }
     }
 }

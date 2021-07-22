@@ -88,7 +88,7 @@ namespace Assets.Scripts.PathTracer
                 _sphereBuffer.Release();
             if (_spheres.Length > 0)
             {
-                _sphereBuffer = new ComputeBuffer(_spheres.Length, sizeof(float) * 12);
+                _sphereBuffer = new ComputeBuffer(_spheres.Length, sizeof(float) * 13);
                 _sphereBuffer.SetData(_spheres);
             }
 
