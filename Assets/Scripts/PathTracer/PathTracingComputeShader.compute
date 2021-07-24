@@ -42,13 +42,28 @@ Sphere TestSphere()
 {
     Sphere sphere;
 
-    sphere.position = float3(0.0f,25.0f,0.0f);
+    sphere.position = float3(1.0f,25.0f,1.0f);
     sphere.radius = 10.0f;
     sphere.albedo = float3(1.0f,1.0f,1.0f);
-    sphere.specular = 0.0f;
-    sphere.smoothness = 0.0f;
+    sphere.specular = 1.0f;
+    sphere.smoothness = 1.0f;
     sphere.emission = float3(0.0f,0.0f,0.0f);
-    sphere.refractionIndex = 1.0f;
+    sphere.refractionIndex = 1.333f;
+
+    return sphere;
+}
+
+Sphere TestSphere2()
+{
+    Sphere sphere;
+
+    sphere.position = float3(1.0f,25.0f,1.0f);
+    sphere.radius = 5.0f;
+    sphere.albedo = float3(1.0f,1.0f,1.0f);
+    sphere.specular = 1.0f;
+    sphere.smoothness = 1.0f;
+    sphere.emission = float3(0.0f,0.0f,0.0f);
+    sphere.refractionIndex = 1.333f;
 
     return sphere;
 }
@@ -118,7 +133,7 @@ RayHit CreateRayHit()
     hit.albedo = float3(0.0f, 1.0f, 0.0f);
     hit.specular = 0.0f;
     hit.smoothness = 0.0f;
-    hit.emission = float3(0.0f, 0.0f, 0.0f);
+    hit.emission = float3(0.0f, 1.0f, 0.0f);
 
     hit.inside = false;
     hit.refractionIndex = 0.0f;
@@ -187,6 +202,9 @@ RayHit Trace(Ray ray)
 
     Sphere sphere = TestSphere();
     IntersectSphere(ray, bestHit, sphere);
+
+    Sphere sphere2 = TestSphere2();
+    IntersectSphere(ray, bestHit, sphere2);
 	
     // Trace spheres
     uint numSpheres, stride;
@@ -221,34 +239,21 @@ float3 SampleHemisphere(float3 normal, float alpha)
     return mul(tangentSpaceDir, GetTangentSpace(normal));
 }
 
+float3 Refract(float3 normal, float3 direction, float refractIndex)
+{
+    return 0.0f;
+}
+
 float SmoothnessToPhongAlpha(float s)
 {
     return pow(1000.0f, s * s);
 }
 
+// TODO: Reduce branching with math and smart coding
 float3 Shade(inout Ray ray, RayHit hit)
 {
     if (hit.distance < MaxDistance)
     {
-        float multiplier = 0.001f;
-
-        // Determine if we want to refract
-        if (hit.inside)
-        {
-            multiplier *= -1.0f;
-        }
-
-        // Hit Scene, reset ray position: Now we need to figure out direction and energy
-        ray.origin = hit.position + hit.normal * multiplier;
-
-        float refractChance = rand();
-        if (hit.refractionIndex > 0.0f && refractChance > 0.5f)
-        {
-            return 0.0f;
-        }
-
-
-
         // Calculate chances of diffuse and specular reflection
         float specChance = energy(hit.specular);
         float diffChance = energy(hit.albedo);        
@@ -258,7 +263,74 @@ float3 Shade(inout Ray ray, RayHit hit)
         
         // Roulette-select the ray's path: This so the specular surface is not 100% reflective
         float roulette = rand();
-        if (roulette < specChance || hit.refractionIndex > 0.0f)
+        if (hit.refractionIndex > 0.0f)
+        {
+            float3 n = hit.normal;
+            float n1 = 1.0f;
+            float n2 = hit.refractionIndex;
+
+            if(hit.inside)
+            {
+                float temp = n1;
+                n1 = n2;
+                n2 = temp;
+
+                n = -1.0f * n;
+            }
+
+            float cos_theta_i = clamp(-1.0f, 1.0f, dot(n, -1.0f * ray.direction));
+            float n1_n2 = n1 / n2;
+            float sin_theta_t = n1_n2 * sqrt(max(0.0f, 1 - cos_theta_i * cos_theta_i));
+
+            float refractRatio = 1.0f;
+            if(sin_theta_t < 1.0f)
+            {
+                float cos_theta_t = sqrt(max( 0.0f, 1.0f - sin_theta_t * sin_theta_t ) );
+                cos_theta_i = abs( cos_theta_i );
+
+                float Rs = ( ( n2 * cos_theta_i ) - ( n1 * cos_theta_t ) ) / ( ( n2 * cos_theta_i ) + ( n1 * cos_theta_t ) );
+                float Rp = ( ( n1 * cos_theta_i ) - ( n2 * cos_theta_t ) ) / ( ( n1 * cos_theta_i ) + ( n2 * cos_theta_t ) );
+                refractRatio = ( Rs * Rs + Rp * Rp ) * 0.5f;
+            }
+
+
+            // Chance is [0, 1] -> If refractChance > 1 we always reflect
+            float refractChance = rand();
+            if(refractChance > refractRatio)
+            {
+                // Refract
+            
+                // Calculate k
+                float k = 1 - (n1_n2 * n1_n2) * (1 - (cos_theta_i * cos_theta_i));
+                if(k < 0)
+                {
+                    ray.direction = 0.0f;
+                    ray.energy = 0.0f;
+                    return float3(0.0f, 0.0f, 0.0f);
+                }
+                else
+                {
+                    ray.direction = n1_n2 * ray.direction + n * (n1_n2 * cos_theta_i - sqrt(k));
+                    ray.origin = hit.position + ray.direction * 0.001f;
+                    ray.energy *= hit.albedo;
+                    return hit.emission;
+                }
+
+                ray.energy = 0.0f;
+                return float3(0.0f, abs(refractRatio - 1.0f), 0.0f);
+            }
+            else
+            {
+                // Reflect
+
+                // Specular reflection
+                float alpha = SmoothnessToPhongAlpha(hit.smoothness);
+                ray.direction = SampleHemisphere(reflect(ray.direction, hit.normal), alpha);
+                float f = (alpha + 2) / (alpha + 1);
+                ray.energy *= (1.0f / specChance) * hit.specular * hit.albedo * sdot(hit.normal, ray.direction, f);
+            }
+        }
+        else if (roulette < specChance)
         {
             // Specular reflection
             float alpha = SmoothnessToPhongAlpha(hit.smoothness);
@@ -273,6 +345,7 @@ float3 Shade(inout Ray ray, RayHit hit)
             ray.energy *= (1.0f / diffChance) * hit.albedo;
         }
         
+        ray.origin = hit.position + ray.direction * 0.001f;
         return hit.emission;
     }
     else
