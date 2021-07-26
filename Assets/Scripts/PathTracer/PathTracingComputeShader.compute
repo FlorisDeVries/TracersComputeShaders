@@ -42,9 +42,9 @@ Sphere TestSphere()
 {
     Sphere sphere;
 
-    sphere.position = float3(1.0f,25.0f,1.0f);
-    sphere.radius = 10.0f;
-    sphere.albedo = float3(1.0f,1.0f,1.0f);
+    sphere.position = float3(0.0f,20.0f,0.0f);
+    sphere.radius = 5.0f;
+    sphere.albedo = float3(1.0f,0.5f,0.5f);
     sphere.specular = 1.0f;
     sphere.smoothness = 1.0f;
     sphere.emission = float3(0.0f,0.0f,0.0f);
@@ -57,9 +57,9 @@ Sphere TestSphere2()
 {
     Sphere sphere;
 
-    sphere.position = float3(1.0f,25.0f,1.0f);
-    sphere.radius = 5.0f;
-    sphere.albedo = float3(1.0f,1.0f,1.0f);
+    sphere.position = float3(0.0f,20.0f,50.0f);
+    sphere.radius = 1.0f;
+    sphere.albedo = float3(1.0f,0.5f,0.5f);
     sphere.specular = 1.0f;
     sphere.smoothness = 1.0f;
     sphere.emission = float3(0.0f,0.0f,0.0f);
@@ -121,6 +121,9 @@ struct RayHit
     float3 emission;
     bool inside;
     float refractionIndex;
+
+    float3 prev_position;
+    bool prev_inside;
 };
 
 RayHit CreateRayHit()
@@ -137,6 +140,9 @@ RayHit CreateRayHit()
 
     hit.inside = false;
     hit.refractionIndex = 0.0f;
+
+    hit.prev_position = float3(0.0f, 0.0f, 0.0f);
+    hit.prev_inside = false;
     
     return hit;
 }
@@ -205,7 +211,7 @@ RayHit Trace(Ray ray)
 
     Sphere sphere2 = TestSphere2();
     IntersectSphere(ray, bestHit, sphere2);
-	
+
     // Trace spheres
     uint numSpheres, stride;
     _Spheres.GetDimensions(numSpheres, stride);
@@ -299,6 +305,14 @@ float3 Shade(inout Ray ray, RayHit hit)
             if(refractChance > refractRatio)
             {
                 // Refract
+                if(hit.inside)
+                {
+                    float d = distance(hit.position, hit.prev_position);
+
+                    ray.energy.x *= exp( -hit.albedo.x / 10.0f * d);
+                    ray.energy.y *= exp( -hit.albedo.x / 10.0f * d);
+                    ray.energy.z *= exp( -hit.albedo.x / 10.0f * d);
+                }
             
                 // Calculate k
                 float k = 1 - (n1_n2 * n1_n2) * (1 - (cos_theta_i * cos_theta_i));
@@ -312,12 +326,8 @@ float3 Shade(inout Ray ray, RayHit hit)
                 {
                     ray.direction = n1_n2 * ray.direction + n * (n1_n2 * cos_theta_i - sqrt(k));
                     ray.origin = hit.position + ray.direction * 0.001f;
-                    ray.energy *= hit.albedo;
                     return hit.emission;
                 }
-
-                ray.energy = 0.0f;
-                return float3(0.0f, abs(refractRatio - 1.0f), 0.0f);
             }
             else
             {
@@ -379,10 +389,20 @@ void CSMain(uint3 id : SV_DispatchThreadID)
     
     // Trace and shade
     float3 result = float3(0, 0, 0);
+    bool prev_inside = false;
+    float3 prev_position = float3(0.0f, 0.0f, 0.0f);
     for (int i = 0; i < 8; i++)
     {
         RayHit hit = Trace(ray);
+
+        hit.prev_inside = prev_inside;
+        hit.prev_position = prev_position;
+
         result += ray.energy * Shade(ray, hit);
+
+        // Keep track of prev Pos for Beer's law
+        prev_inside = hit.inside;
+        prev_position = hit.position;
 
         if (!any(ray.energy))
             break;
