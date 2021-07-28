@@ -1,3 +1,5 @@
+using Assets.Scripts.Primitives;
+using Assets.Scripts.Primitives.Compositions;
 using UnityEngine;
 
 namespace Assets.Scripts.Scenes
@@ -10,14 +12,16 @@ namespace Assets.Scripts.Scenes
         public int Seed = 0;
 
         [Header("Primitives")]
-        [Range(1, 150)]
-        public int SphereCount = 25;
-        [Range(10, 100)]
-        public float SphereRange = 10;
-        public Vector2 SphereSize = new Vector2(.1f, 2f);
-
+        public ASphereComposition SphereComposition = null;
 
         [Header("Lights")]
         public Light DirectionalLight = default;
+
+        #region Properties
+        public Sphere[] Spheres => SphereComposition != null ? SphereComposition.GetSpheres() : new Sphere[0];
+
+        public int SphereCount => SphereComposition.GetSphereCount();
+
+        #endregion
     }
 }

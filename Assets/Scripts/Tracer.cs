@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Assets.Scripts.Common.Primitives;
+using Assets.Scripts.Primitives;
 using Assets.Scripts.Scenes;
 using UnityEngine;
 
@@ -19,7 +19,6 @@ namespace Assets.Scripts
 
         // Sphere data
         private ComputeBuffer _sphereBuffer;
-        private Sphere[] _spheres;
 
         private void Awake()
         {
@@ -61,26 +60,13 @@ namespace Assets.Scripts
         private void CreateScene()
         {
             Random.InitState(_scene.Seed);
-
-            // Primitives
-
-            // Create some random spheres
-            if (_spheres == null || _spheres.Length != _scene.SphereCount)
-            {
-                //_spheres = Spheres.GenerateRandomSphere(_sphereCount, _sphereRange, _sphereSize);
-                //_spheres = Spheres.GenerateSphereArray(_sphereCount);
-                _spheres = Spheres.GenerateSphereCircle(_scene.SphereCount, _scene.SphereRange, _scene.SphereSize);
-            }
-
+            
             // Assign to compute buffer
-            if (_sphereBuffer != null)
-                _sphereBuffer.Release();
-            if (_spheres.Length > 0)
-            {
-                _sphereBuffer = new ComputeBuffer(_spheres.Length, sizeof(float) * 13);
-                _sphereBuffer.SetData(_spheres);
-            }
+            _sphereBuffer?.Release();
+            if (_scene.Spheres.Length <= 0) return;
 
+            _sphereBuffer = new ComputeBuffer(_scene.SphereCount, sizeof(float) * Sphere.NumberOfFloats);
+            _sphereBuffer.SetData(_scene.Spheres);
         }
 
         private void OnRenderImage(RenderTexture source, RenderTexture destination)
