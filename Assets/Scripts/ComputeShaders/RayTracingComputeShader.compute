@@ -1,0 +1,298 @@
+﻿#pragma kernel CSMain
+
+// region Constants
+	SamplerState sampler_SkyboxTexture;
+	static const float PI = 3.14159265f;
+	static const float EPSILON = 1e-8;
+	static const float MaxDistance = 9999999999999999999999999.0f;
+// endregion 
+
+// region Structs
+	struct Sphere
+	{
+	    float3 position;
+	    float radius;
+	    float3 albedo;
+	    float specular;
+	    float smoothness;
+	    float3 emission;
+	    float refraction_index;
+	};
+
+	struct Plane
+	{
+	    float3 normal;
+	    float3 position;
+	    float3 albedo;
+	    float specular;
+	    float smoothness;
+	    float3 emission;
+
+	};
+
+	struct Ray
+	{
+	    float3 origin;
+	    float3 direction;
+	    float3 energy;
+	};
+
+	struct RayHit
+	{
+	    float3 position;
+	    float distance;
+	    float3 normal;
+	    float3 albedo;
+	    float specular;
+	    float smoothness;
+	    float3 emission;
+	    bool inside;
+	    float refraction_index;
+
+	    float3 prev_position;
+	    bool prev_inside;
+	};
+// endregion
+
+// region Exposed
+    // RNG
+    float2 _Pixel;
+    float _Seed;
+
+    // Basic Path tracing
+    RWTexture2D<float4> _Result;
+    float4x4 _CameraToWorld;
+    float4x4 _CameraInverseProjection;
+    Texture2D<float4> _SkyboxTexture;
+    float2 _PixelOffset;
+
+    // Primitives
+    StructuredBuffer<Sphere> _Spheres;
+
+    // Light
+    float4 _DirectionalLight;
+// endregion
+
+// region Constructors
+    Sphere TestSphere()
+    {
+        Sphere sphere;
+
+        sphere.position = float3(0.0f, 20.0f, 0.0f);
+        sphere.radius = 5.0f;
+        sphere.albedo = float3(1.0f, 0.5f, 0.5f);
+        sphere.specular = 1.0f;
+        sphere.smoothness = 1.0f;
+        sphere.emission = float3(0.0f, 0.0f, 0.0f);
+        sphere.refraction_index = 1.333f;
+
+        return sphere;
+    }
+
+    Sphere TestSphere2()
+    {
+        Sphere sphere;
+
+        sphere.position = float3(0.0f, 20.0f, 50.0f);
+        sphere.radius = 1.0f;
+        sphere.albedo = float3(1.0f, 0.5f, 0.5f);
+        sphere.specular = 1.0f;
+        sphere.smoothness = 1.0f;
+        sphere.emission = float3(0.0f, 0.0f, 0.0f);
+        sphere.refraction_index = 1.333f;
+
+        return sphere;
+    }
+
+    Plane CreateUnderground()
+    {
+        Plane plane;
+
+        plane.normal = float3(0, -1, 0);
+        plane.position = float3(0, -4, 0);
+        plane.albedo = float3(.1f, .1f, .1f);
+        plane.specular = 0.3f;
+        plane.smoothness = 1.0f;
+        plane.emission = float3(0.0f, 0.0f, 0.0f);
+
+        return plane;
+    }
+
+    Ray CreateRay(float3 origin, float3 direction)
+    {
+        Ray ray;
+        ray.origin = origin;
+        ray.direction = direction;
+        ray.energy = float3(1.0f, 1.0f, 1.0f);
+        return ray;
+    }
+
+    Ray CreateCameraRay(float2 uv)
+    {
+        // Transform the camera origin to world space
+        const float3 origin = mul(_CameraToWorld, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
+
+        // Invert the perspective projection of the view-space position
+        float3 direction = mul(_CameraInverseProjection, float4(uv, 0.0f, 1.0f)).xyz;
+
+        // Transform the direction from camera to world space and normalize
+        direction = mul(_CameraToWorld, float4(direction, 0.0f)).xyz;
+        direction = normalize(direction);
+
+        return CreateRay(origin, direction);
+    }
+
+    RayHit CreateRayHit()
+    {
+        RayHit hit;
+
+        hit.position = float3(0.0f, 0.0f, 0.0f);
+        hit.distance = MaxDistance;
+        hit.normal = float3(0.0f, 0.0f, 0.0f);
+        hit.albedo = float3(0.0f, 1.0f, 0.0f);
+        hit.specular = 0.0f;
+        hit.smoothness = 0.0f;
+        hit.emission = float3(0.0f, 1.0f, 0.0f);
+
+        hit.inside = false;
+        hit.refraction_index = 0.0f;
+
+        hit.prev_position = float3(0.0f, 0.0f, 0.0f);
+        hit.prev_inside = false;
+
+        return hit;
+    }
+// endregion
+
+// region IntersectionLogic
+	void IntersectPlane(Ray ray, inout RayHit best_hit, Plane plane)
+    {
+        const float denom = dot(plane.normal, ray.direction);
+        if (denom > 0.0000001f)
+        {
+            const float3 p_or_o = plane.position - ray.origin;
+            const float t = dot(p_or_o, plane.normal) / denom;
+
+            if (t > 0 && t < best_hit.distance)
+            {
+                best_hit.distance = t;
+                best_hit.position = ray.origin + t * ray.direction;
+                best_hit.normal = -1.0f * plane.normal;
+                best_hit.albedo = plane.albedo;
+                best_hit.specular = plane.specular;
+                best_hit.smoothness = plane.smoothness;
+                best_hit.emission = plane.emission;
+            }
+        }
+	}
+
+	void IntersectSphere(Ray ray, inout RayHit bestHit, Sphere sphere)
+	{
+        // Calculate distance along the ray where the sphere is intersected
+        const float3 d = ray.origin - sphere.position;
+        const float p1 = -dot(ray.direction, d);
+        float p2 = p1 * p1 - dot(d, d) + sphere.radius * sphere.radius;
+        if (p2 < 0)
+            return;
+        p2 = sqrt(p2);
+        float t = p1 - p2;
+
+        const bool inside = t < 0;
+
+        if (inside)
+            t = p1 + p2;
+
+        if (t > 0 && t < bestHit.distance)
+	    {
+            bestHit.distance = t;
+            bestHit.position = ray.origin + t * ray.direction;
+            bestHit.normal = normalize(bestHit.position - sphere.position);
+            bestHit.albedo = sphere.albedo;
+            bestHit.specular = sphere.specular;
+            bestHit.smoothness = sphere.smoothness;
+            bestHit.emission = sphere.emission;
+
+            bestHit.inside = inside;
+            bestHit.refraction_index = sphere.refraction_index;
+	    }
+	}
+// endregion 
+
+RayHit Trace(Ray ray)
+{
+    RayHit best_hit = CreateRayHit();
+
+    const Plane plane = CreateUnderground();
+    IntersectPlane(ray, best_hit, plane);
+	
+    // Trace spheres
+    uint num_spheres, stride;
+    _Spheres.GetDimensions(num_spheres, stride);
+    for (uint i = 0; i < num_spheres; i++)
+        IntersectSphere(ray, best_hit, _Spheres[i]);
+    
+    return best_hit;
+}
+
+float3 Shade(inout Ray ray, RayHit hit)
+{
+    
+    if (hit.distance < MaxDistance)
+    {
+        // Hit scene
+
+        // Reflect the ray and multiply energy with specular reflection
+        ray.origin = hit.position + hit.normal * 0.001f;
+        ray.direction = reflect(ray.direction, hit.normal);
+        ray.energy *= hit.specular;
+        
+        // Shadow test ray
+        bool shadow = false;
+        const Ray shadow_ray = CreateRay(hit.position + hit.normal * 0.001f, -1 * _DirectionalLight.xyz);
+        const RayHit shadow_hit = Trace(shadow_ray);
+        if (shadow_hit.distance != MaxDistance)
+        {
+            return float3(0.0f, 0.0f, 0.0f);
+        }
+        
+        // Return a diffuse-shaded color
+        return saturate(dot(hit.normal, _DirectionalLight.xyz) * -1) * _DirectionalLight.w * hit.albedo;
+    }
+    else
+    {
+        // Hit sky
+        
+        // Erase the ray's energy - the sky doesn't reflect anything
+        ray.energy = 0.0f;
+        
+        // Sample the skybox and write it
+        float theta = acos(ray.direction.y) / -PI;
+        float phi = atan2(ray.direction.x, -ray.direction.z) / -PI * 0.5f;
+        return _SkyboxTexture.SampleLevel(sampler_SkyboxTexture, float2(phi, theta), 0).xyz * 1.2;
+    }
+}
+
+[numthreads(8, 8, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    // Get the dimensions of the RenderTexture
+    uint width, height;
+    _Result.GetDimensions(width, height);
+
+    // Transform pixel to [-1,1] range
+    float2 uv = float2((id.xy + _PixelOffset) / float2(width, height) * 2.0f - 1.0f);
+
+    // Get a ray for the UVs
+    Ray ray = CreateCameraRay(uv);
+    
+    // Trace and shade
+    float3 result = float3(0, 0, 0);
+    for (int i = 0; i < 8; i++)
+    {
+	    const RayHit hit = Trace(ray);
+        result += ray.energy * Shade(ray, hit);
+        if (!any(ray.energy))
+            break;
+    }
+    _Result[id.xy] = float4(result, 1);
+}

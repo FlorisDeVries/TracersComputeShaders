@@ -1,15 +1,14 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using Assets.Scripts.Common.Primitives;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
-namespace Assets.Scripts.PathTracer
+namespace Assets.Scripts
 {
-    public class PathTracer : MonoBehaviour
+    public class Tracer : MonoBehaviour
     {
         [SerializeField] private ComputeShader _pathTracingShader = default;
         [SerializeField] private Texture _skyboxTexture = default;
-        [SerializeField] private int _seed;
+        [SerializeField] private int _seed = 0;
 
         private RenderTexture _target;
         private RenderTexture _converged;
@@ -62,7 +61,7 @@ namespace Assets.Scripts.PathTracer
             _pathTracingShader.SetFloat("_Seed", Random.value);
 
             // Lights
-            Vector3 l = _directionalLight.transform.forward;
+            var l = _directionalLight.transform.forward;
             _pathTracingShader.SetVector("_DirectionalLight", new Vector4(l.x, l.y, l.z, _directionalLight.intensity));
 
             if (_sphereBuffer != null)
@@ -157,5 +156,6 @@ namespace Assets.Scripts.PathTracer
                 }
             }
         }
+
     }
 }

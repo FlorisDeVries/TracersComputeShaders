@@ -1,13 +1,13 @@
 ﻿#pragma kernel CsMain
 
-#pragma region Constants
+// region Constants
 	SamplerState sampler_SkyboxTexture;
 	static const float PI = 3.14159265f;
 	static const float EPSILON = 1e-8;
 	static const float MaxDistance = 9999999999999999999999999.0f;
-#pragma endregion 
+// endregion 
 
-#pragma region Structs
+// region Structs
 	struct Sphere
 	{
 	    float3 position;
@@ -34,16 +34,7 @@
 	{
 	    float3 origin;
 	    float3 direction;
-	    float3 energy;
-
-	    static Ray ray(float3 origin, float3 direction)
-	    {
-	        Ray ray;
-	        ray.origin = origin;
-	        ray.direction = direction;
-	        ray.energy = float3(1.0f, 1.0f, 1.0f);
-	        return ray;		
-		}
+        float3 energy;
 	};
 
     struct RayHit
@@ -61,9 +52,9 @@
         float3 prev_position;
         bool prev_inside;
     };
-#pragma endregion
+// endregion
 
-#pragma region Exposed
+// region Exposed
 	// RNG
 	float2 _Pixel;
 	float _Seed;
@@ -80,9 +71,9 @@
 
 	// Light
 	float4 _DirectionalLight;
-#pragma endregion
+// endregion
 
-#pragma region Constructors
+// region Constructors
 	Sphere TestSphere()
 	{
 	    Sphere sphere;
@@ -171,9 +162,9 @@
 
         return hit;
     }
-#pragma endregion
+// endregion
 
-#pragma region HelperFunctions
+// region HelperFunctions
 	float Rand()
 	{
 		const float result = frac(sin(_Seed / 100.0f * dot(_Pixel, float2(12.9898f, 78.233f))) * 43758.5453f);
@@ -220,10 +211,10 @@
     {
         return pow(1000.0f, s * s);
     }
-#pragma endregion
+// endregion
 
-#pragma region IntersectionLogic
-	void IntersectPlane(Ray ray, inout RayHit bestHit, Plane plane)
+// region IntersectionLogic
+	void IntersectPlane(Ray ray, inout RayHit best_hit, Plane plane)
 	{
 		const float denom = dot(plane.normal, ray.direction);
 	    if (denom > 0.0000001f)
@@ -231,15 +222,15 @@
 		    const float3 p_or_o = plane.position - ray.origin;
 		    const float t = dot(p_or_o, plane.normal) / denom;
 
-	        if (t > 0 && t < bestHit.distance)
+	        if (t > 0 && t < best_hit.distance)
 	        {
-	            bestHit.distance = t;
-	            bestHit.position = ray.origin + t * ray.direction;
-	            bestHit.normal = -1.0f * plane.normal;
-                bestHit.albedo = plane.albedo;
-                bestHit.specular = plane.specular;
-                bestHit.smoothness = plane.smoothness;
-                bestHit.emission = plane.emission;
+	            best_hit.distance = t;
+	            best_hit.position = ray.origin + t * ray.direction;
+	            best_hit.normal = -1.0f * plane.normal;
+                best_hit.albedo = plane.albedo;
+                best_hit.specular = plane.specular;
+                best_hit.smoothness = plane.smoothness;
+                best_hit.emission = plane.emission;
 	        }
 	    }
 	}
@@ -275,7 +266,7 @@
 
 	    }
 	}
-#pragma endregion
+// endregion
 
 RayHit Trace(const Ray ray)
 {
