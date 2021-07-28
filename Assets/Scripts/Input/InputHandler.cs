@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace Assets.Scripts.Common.Input
 {
-    [CreateAssetMenu(fileName = "InputHandler", menuName = "Input Handler")]
+    [CreateAssetMenu(fileName = "InputHandler", menuName = "ScriptableObjects/Input Handler")]
     public class InputHandler : ScriptableObject, GameInput.IWorldInteractionActions
     {
         public UnityAction<Vector2> HorizontalMoveEvent = delegate { };

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Assets.Scripts.Common.Primitives;
+using Assets.Scripts.Scenes;
 using UnityEngine;
 
 namespace Assets.Scripts
@@ -7,13 +8,12 @@ namespace Assets.Scripts
     public class Tracer : MonoBehaviour
     {
         [SerializeField] private ComputeShader _pathTracingShader = default;
-        [SerializeField] private Texture _skyboxTexture = default;
-        [SerializeField] private int _seed = 0;
+        [SerializeField] private SceneSO _scene = default;
 
         private RenderTexture _target;
         private RenderTexture _converged;
         private Camera _camera;
-        [SerializeField] private uint _currentSample = 0;
+        private uint _currentSample = 0;
         private Material _addMaterial = null;
         private List<Transform> _transformsToWatch = new List<Transform>();
 
@@ -21,22 +21,12 @@ namespace Assets.Scripts
         private ComputeBuffer _sphereBuffer;
         private Sphere[] _spheres;
 
-        [Header("Primitives")]
-        [Range(1, 150)]
-        [SerializeField] private int _sphereCount = 25;
-        [Range(10, 100)]
-        [SerializeField] private float _sphereRange = 10;
-        [SerializeField] private Vector2 _sphereSize = new Vector2(.1f, 2f);
-
-        [Header("Lights")]
-        [SerializeField] private Light _directionalLight = default;
-
         private void Awake()
         {
             _camera = GetComponent<Camera>();
 
             _transformsToWatch.Add(transform);
-            _transformsToWatch.Add(_directionalLight.transform);
+            _transformsToWatch.Add(_scene.DirectionalLight.transform);
         }
 
         private void OnEnable()
@@ -56,13 +46,13 @@ namespace Assets.Scripts
             // Set basic buffers
             _pathTracingShader.SetMatrix("_CameraToWorld", _camera.cameraToWorldMatrix);
             _pathTracingShader.SetMatrix("_CameraInverseProjection", _camera.projectionMatrix.inverse);
-            _pathTracingShader.SetTexture(0, "_SkyboxTexture", _skyboxTexture);
+            _pathTracingShader.SetTexture(0, "_SkyboxTexture", _scene.SkyboxTexture);
             _pathTracingShader.SetVector("_PixelOffset", new Vector2(Random.value, Random.value));
             _pathTracingShader.SetFloat("_Seed", Random.value);
 
             // Lights
-            var l = _directionalLight.transform.forward;
-            _pathTracingShader.SetVector("_DirectionalLight", new Vector4(l.x, l.y, l.z, _directionalLight.intensity));
+            var l = _scene.DirectionalLight.transform.forward;
+            _pathTracingShader.SetVector("_DirectionalLight", new Vector4(l.x, l.y, l.z, _scene.DirectionalLight.intensity));
 
             if (_sphereBuffer != null)
                 _pathTracingShader.SetBuffer(0, "_Spheres", _sphereBuffer);
@@ -70,16 +60,16 @@ namespace Assets.Scripts
 
         private void CreateScene()
         {
-            Random.InitState(_seed);
+            Random.InitState(_scene.Seed);
 
             // Primitives
 
             // Create some random spheres
-            if (_spheres == null || _spheres.Length != _sphereCount)
+            if (_spheres == null || _spheres.Length != _scene.SphereCount)
             {
                 //_spheres = Spheres.GenerateRandomSphere(_sphereCount, _sphereRange, _sphereSize);
                 //_spheres = Spheres.GenerateSphereArray(_sphereCount);
-                _spheres = Spheres.GenerateSphereCircle(_sphereCount, _sphereRange, _sphereSize);
+                _spheres = Spheres.GenerateSphereCircle(_scene.SphereCount, _scene.SphereRange, _scene.SphereSize);
             }
 
             // Assign to compute buffer
