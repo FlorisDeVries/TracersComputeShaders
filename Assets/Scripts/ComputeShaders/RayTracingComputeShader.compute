@@ -24,9 +24,9 @@
 	    float3 normal;
 	    float3 position;
 	    float3 albedo;
+	    float3 emission;
 	    float specular;
 	    float smoothness;
-	    float3 emission;
 
 	};
 
@@ -68,42 +68,13 @@
 
     // Primitives
     StructuredBuffer<Sphere> _Spheres;
+    StructuredBuffer<Plane> _Planes;
 
     // Light
     float4 _DirectionalLight;
 // endregion
 
 // region Constructors
-    Sphere TestSphere()
-    {
-        Sphere sphere;
-
-        sphere.position = float3(0.0f, 20.0f, 0.0f);
-        sphere.radius = 5.0f;
-        sphere.albedo = float3(1.0f, 0.5f, 0.5f);
-        sphere.specular = 1.0f;
-        sphere.smoothness = 1.0f;
-        sphere.emission = float3(0.0f, 0.0f, 0.0f);
-        sphere.refraction_index = 1.333f;
-
-        return sphere;
-    }
-
-    Sphere TestSphere2()
-    {
-        Sphere sphere;
-
-        sphere.position = float3(0.0f, 20.0f, 50.0f);
-        sphere.radius = 1.0f;
-        sphere.albedo = float3(1.0f, 0.5f, 0.5f);
-        sphere.specular = 1.0f;
-        sphere.smoothness = 1.0f;
-        sphere.emission = float3(0.0f, 0.0f, 0.0f);
-        sphere.refraction_index = 1.333f;
-
-        return sphere;
-    }
-
     Plane CreateUnderground()
     {
         Plane plane;
@@ -221,12 +192,15 @@
 RayHit Trace(Ray ray)
 {
     RayHit best_hit = CreateRayHit();
-
-    const Plane plane = CreateUnderground();
-    IntersectPlane(ray, best_hit, plane);
+    
+    // Trace planes
+    uint num_planes, stride;
+    _Planes.GetDimensions(num_planes, stride);
+    for (uint i = 0; i < num_planes; i++)
+        IntersectPlane(ray, best_hit, _Planes[i]);
 	
     // Trace spheres
-    uint num_spheres, stride;
+    uint num_spheres;
     _Spheres.GetDimensions(num_spheres, stride);
     for (uint i = 0; i < num_spheres; i++)
         IntersectSphere(ray, best_hit, _Spheres[i]);

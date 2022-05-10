@@ -15,4 +15,5 @@ MonoBehaviour:
   SkyboxTexture: {fileID: 2800000, guid: ac3bf2034bf1bcd4a8f1cf07a4735b5f, type: 3}
   Seed: 1321341
   SphereComposition: {fileID: 11400000, guid: 3502acf8a21467b48a2dcf5fd0a1a714, type: 2}
+  PlaneComposition: {fileID: 11400000, guid: f2da27d4a8fc8ee4a99f3e87cb36fb83, type: 2}
   DirectionalLight: {fileID: 6865016219306251949, guid: e32a3b70794763141828846be2293614, type: 3}

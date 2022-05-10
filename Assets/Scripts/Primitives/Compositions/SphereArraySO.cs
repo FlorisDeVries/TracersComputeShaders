@@ -4,26 +4,21 @@ using UnityEngine;
 namespace Assets.Scripts.Primitives.Compositions
 {
     [CreateAssetMenu(fileName = "SphereArray", menuName = "ScriptableObjects/Compositions/SphereArray")]
-    public class SphereArraySO : ASphereComposition
+    public class SphereArraySO : APrimitiveComposition<Sphere>
     {
         [Header("Properties")]
         [Range(1, 150)]
-        public int SphereCount = 25;
-
-        public override Sphere[] GetSpheres()
+        [SerializeField] private int SphereCount = 25;
+        
+        protected override bool CheckRemake()
         {
-            if (spheres == null || spheres.Length != SphereCount)
-            {
-                CreateSpheres();
-            }
-
-            return spheres;
+            return primitives.Length != SphereCount;
         }
 
-        private void CreateSpheres()
+        protected override void CreatePrimitives()
         {
             var dimension = (int)Math.Ceiling(Mathf.Sqrt(SphereCount));
-            spheres = new Sphere[SphereCount];
+            primitives = new Sphere[SphereCount];
 
             for (var x = 0; x < dimension; x++)
             {
@@ -33,8 +28,8 @@ namespace Assets.Scripts.Primitives.Compositions
                         return;
 
                     var randomSphere = Sphere.RandomSphere(1, new Vector2(1, 1));
-                    randomSphere.Pos = new Vector3(x * 3, 1, y * 3);
-                    spheres[x * dimension + y] = randomSphere;
+                    randomSphere.Position = new Vector3(x * 3, 1, y * 3);
+                    primitives[x * dimension + y] = randomSphere;
                 }
             }
         }

@@ -1,9 +1,8 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
 
-namespace Assets.Scripts.Common.Input
+namespace Assets.Scripts.Input
 {
     [CreateAssetMenu(fileName = "InputHandler", menuName = "ScriptableObjects/Input Handler")]
     public class InputHandler : ScriptableObject, GameInput.IWorldInteractionActions
@@ -12,6 +11,7 @@ namespace Assets.Scripts.Common.Input
         public UnityAction<Vector2> MouseMoveEvent = delegate { };
         public UnityAction<float> VerticalMoveEvent = delegate { };
         public UnityAction<bool> SprintEvent = delegate { };
+        public UnityAction EscapeEvent = delegate { };
 
         private GameInput _gameInput;
 
@@ -56,6 +56,14 @@ namespace Assets.Scripts.Common.Input
         public void OnMouseMove(InputAction.CallbackContext context)
         {
             MouseMoveEvent.Invoke(context.ReadValue<Vector2>());
+        }
+
+        public void OnEscape(InputAction.CallbackContext context)
+        {
+            if (context.performed)
+            {
+                EscapeEvent.Invoke();
+            }
         }
     }
 }

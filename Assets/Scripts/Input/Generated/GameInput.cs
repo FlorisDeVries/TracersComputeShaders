@@ -49,6 +49,14 @@ public class @GameInput : IInputActionCollection, IDisposable
                     ""expectedControlType"": ""Vector2"",
                     ""processors"": """",
                     ""interactions"": """"
+                },
+                {
+                    ""name"": ""Escape"",
+                    ""type"": ""Button"",
+                    ""id"": ""6765fc40-e760-49b7-b711-49cc8fd2891b"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """"
                 }
             ],
             ""bindings"": [
@@ -161,6 +169,17 @@ public class @GameInput : IInputActionCollection, IDisposable
                     ""action"": ""MouseMove"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""18b9d213-f519-492e-9b34-81c8fcbbbef8"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Escape"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -173,6 +192,7 @@ public class @GameInput : IInputActionCollection, IDisposable
         m_WorldInteraction_VerticalMove = m_WorldInteraction.FindAction("VerticalMove", throwIfNotFound: true);
         m_WorldInteraction_Sprint = m_WorldInteraction.FindAction("Sprint", throwIfNotFound: true);
         m_WorldInteraction_MouseMove = m_WorldInteraction.FindAction("MouseMove", throwIfNotFound: true);
+        m_WorldInteraction_Escape = m_WorldInteraction.FindAction("Escape", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -226,6 +246,7 @@ public class @GameInput : IInputActionCollection, IDisposable
     private readonly InputAction m_WorldInteraction_VerticalMove;
     private readonly InputAction m_WorldInteraction_Sprint;
     private readonly InputAction m_WorldInteraction_MouseMove;
+    private readonly InputAction m_WorldInteraction_Escape;
     public struct WorldInteractionActions
     {
         private @GameInput m_Wrapper;
@@ -234,6 +255,7 @@ public class @GameInput : IInputActionCollection, IDisposable
         public InputAction @VerticalMove => m_Wrapper.m_WorldInteraction_VerticalMove;
         public InputAction @Sprint => m_Wrapper.m_WorldInteraction_Sprint;
         public InputAction @MouseMove => m_Wrapper.m_WorldInteraction_MouseMove;
+        public InputAction @Escape => m_Wrapper.m_WorldInteraction_Escape;
         public InputActionMap Get() { return m_Wrapper.m_WorldInteraction; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -255,6 +277,9 @@ public class @GameInput : IInputActionCollection, IDisposable
                 @MouseMove.started -= m_Wrapper.m_WorldInteractionActionsCallbackInterface.OnMouseMove;
                 @MouseMove.performed -= m_Wrapper.m_WorldInteractionActionsCallbackInterface.OnMouseMove;
                 @MouseMove.canceled -= m_Wrapper.m_WorldInteractionActionsCallbackInterface.OnMouseMove;
+                @Escape.started -= m_Wrapper.m_WorldInteractionActionsCallbackInterface.OnEscape;
+                @Escape.performed -= m_Wrapper.m_WorldInteractionActionsCallbackInterface.OnEscape;
+                @Escape.canceled -= m_Wrapper.m_WorldInteractionActionsCallbackInterface.OnEscape;
             }
             m_Wrapper.m_WorldInteractionActionsCallbackInterface = instance;
             if (instance != null)
@@ -271,6 +296,9 @@ public class @GameInput : IInputActionCollection, IDisposable
                 @MouseMove.started += instance.OnMouseMove;
                 @MouseMove.performed += instance.OnMouseMove;
                 @MouseMove.canceled += instance.OnMouseMove;
+                @Escape.started += instance.OnEscape;
+                @Escape.performed += instance.OnEscape;
+                @Escape.canceled += instance.OnEscape;
             }
         }
     }
@@ -281,5 +309,6 @@ public class @GameInput : IInputActionCollection, IDisposable
         void OnVerticalMove(InputAction.CallbackContext context);
         void OnSprint(InputAction.CallbackContext context);
         void OnMouseMove(InputAction.CallbackContext context);
+        void OnEscape(InputAction.CallbackContext context);
     }
 }

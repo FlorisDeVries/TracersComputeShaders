@@ -1,6 +1,7 @@
 using Assets.Scripts.Primitives;
 using Assets.Scripts.Primitives.Compositions;
 using UnityEngine;
+using Plane = Assets.Scripts.Primitives.Plane;
 
 namespace Assets.Scripts.Scenes
 {
@@ -12,15 +13,18 @@ namespace Assets.Scripts.Scenes
         public int Seed = 0;
 
         [Header("Primitives")]
-        public ASphereComposition SphereComposition = null;
+        public APrimitiveComposition<Sphere> SphereComposition = null;
+        public APrimitiveComposition<Plane> PlaneComposition = null;
 
         [Header("Lights")]
         public Light DirectionalLight = default;
 
         #region Properties
-        public Sphere[] Spheres => SphereComposition != null ? SphereComposition.GetSpheres() : new Sphere[0];
+        public Sphere[] Spheres => SphereComposition != null ? SphereComposition.GetPrimitives() : new Sphere[0];
+        public int SphereCount => SphereComposition.GetPrimitiveCount();
 
-        public int SphereCount => SphereComposition.GetSphereCount();
+        public Plane[] Planes => PlaneComposition != null ? PlaneComposition.GetPrimitives() : new Plane[0];
+        public int PlaneCount => PlaneComposition.GetPrimitiveCount();
 
         #endregion
     }

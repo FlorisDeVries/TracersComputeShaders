@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Assets.Scripts.Common.Input
+namespace Assets.Scripts.Input
 {
     public class CameraController : MonoBehaviour
     {
@@ -18,6 +18,7 @@ namespace Assets.Scripts.Common.Input
         private Vector2 _mouseDelta = Vector2.zero;
 
         private bool _sprinting = false;
+        private bool _pauseInput = false;
 
         private void OnEnable()
         {
@@ -25,6 +26,7 @@ namespace Assets.Scripts.Common.Input
             _inputHandler.VerticalMoveEvent += OnMoveVertical;
             _inputHandler.MouseMoveEvent += OnMoveMouse;
             _inputHandler.SprintEvent += OnSprint;
+            _inputHandler.EscapeEvent += OnEscape;
 
             Cursor.visible = false;
         }
@@ -35,6 +37,7 @@ namespace Assets.Scripts.Common.Input
             _inputHandler.VerticalMoveEvent -= OnMoveVertical;
             _inputHandler.MouseMoveEvent -= OnMoveMouse;
             _inputHandler.SprintEvent -= OnSprint;
+            _inputHandler.EscapeEvent -= OnEscape;
 
             Cursor.visible = true;
         }
@@ -60,6 +63,12 @@ namespace Assets.Scripts.Common.Input
             _sprinting = pressed;
         }
 
+        private void OnEscape()
+        {
+            _pauseInput = !_pauseInput;
+        }
+
+
         private void Update()
         {
             Look();
@@ -68,6 +77,9 @@ namespace Assets.Scripts.Common.Input
 
         private void Move()
         {
+            if (_pauseInput)
+                return;
+
             var velocity = _moveDirection * (_speed * 10 * Time.deltaTime);
             if (_sprinting) velocity *= _sprintMultiplier;
 
@@ -81,6 +93,9 @@ namespace Assets.Scripts.Common.Input
 
         private void Look()
         {
+            if (_pauseInput)
+                return;
+
             var euler = transform.rotation.eulerAngles;
             euler.y += _mouseDelta.x;
             euler.x -= _mouseDelta.y;

@@ -1,31 +1,25 @@
-using System.Linq;
 using UnityEngine;
 
 namespace Assets.Scripts.Primitives.Compositions
 {
     [CreateAssetMenu(fileName = "SphereCircle", menuName = "ScriptableObjects/Compositions/SphereCircle")]
-    public class SphereCircleSO : ASphereComposition
+    public class SphereCircleSO : APrimitiveComposition<Sphere>
     {
         [Header("Properties")]
         [Range(1, 150)]
-        public int SphereCount = 25;
+        [SerializeField] private int SphereCount = 25;
         [Range(10, 100)]
-        public float SphereRadius = 10;
-        public Vector2 SphereSize = new Vector2(.1f, 2f);
+        [SerializeField] private float SphereRadius = 10;
+        [SerializeField] private Vector2 SphereSize = new Vector2(.1f, 2f);
 
-        public override Sphere[] GetSpheres()
+        protected override bool CheckRemake()
         {
-            if (spheres == null || spheres.Length != SphereCount)
-            {
-                CreateSpheres();
-            }
-
-            return spheres;
+            return primitives.Length != SphereCount;
         }
 
-        private void CreateSpheres()
+        protected override void CreatePrimitives()
         {
-            spheres = new Sphere[SphereCount];
+            primitives = new Sphere[SphereCount];
 
             for (var i = 0; i < SphereCount; i++)
             {
@@ -36,7 +30,7 @@ namespace Assets.Scripts.Primitives.Compositions
                 {
                     randomSphere = Sphere.RandomSphere(SphereRadius, SphereSize);
                     var randomPos = Random.insideUnitCircle * SphereRadius;
-                    randomSphere.Pos = new Vector3(randomPos.x, 1, randomPos.y);
+                    randomSphere.Position = new Vector3(randomPos.x, 1, randomPos.y);
 
                     retries--;
                     if (retries >= 1) continue;
@@ -44,9 +38,9 @@ namespace Assets.Scripts.Primitives.Compositions
                     Debug.LogWarning("The added sphere intersects another sphere.");
                     break;
                     
-                } while (Sphere.IntersectsOtherSphere(randomSphere, spheres));
+                } while (Sphere.IntersectsOtherSphere(randomSphere, primitives));
 
-                spheres[i] = randomSphere;
+                primitives[i] = randomSphere;
             }
         }
     }
